@@ -53,7 +53,7 @@ static uint8_t crc8(const uint8_t *data, int len) {
 // Public functions follow
 struct mgos_htu31d *mgos_htu31d_create(struct mgos_i2c *i2c, uint8_t i2caddr) {
   struct mgos_htu31d *sensor;
-  uint32_t version;
+  uint8_t version[4] = {0};
 
   if (!i2c) {
     return NULL;
@@ -72,16 +72,19 @@ struct mgos_htu31d *mgos_htu31d_create(struct mgos_i2c *i2c, uint8_t i2caddr) {
   mgos_usleep(15000);
 
   mgos_htu31d_cmd(sensor, MGOS_HTU31D_READREG);
-  if (!mgos_i2c_read(sensor->i2c, sensor->i2caddr, &version, 4, true)) {
-    LOG(LL_ERROR, ("Could not read command"));
+  if (!mgos_i2c_read(sensor->i2c, sensor->i2caddr, version, 4, true)) {
+    LOG(LL_ERROR, ("Could not read sensor's version"));
     free(sensor);
     return NULL;
   }
 
-  if (version != 0) {
-    LOG(LL_DEBUG, ("HTU31D serial number %lu created at I2C 0x%02x",
-                   (unsigned long) version, sensor->i2caddr));
+  if (version[3] == crc8(version, 3)) {
+    LOG(LL_INFO,
+        ("HTU31D serial number 0x%02hhx%02hhx%02hhx created at I2C 0x%02x",
+         version[0], version[1], version[2], sensor->i2caddr));
     return sensor;
+  } else {
+    LOG(LL_ERROR, ("CRC error on version data"));
   }
 
   LOG(LL_ERROR, ("Failed to create HTU31D at I2C 0x%02x", i2caddr));
