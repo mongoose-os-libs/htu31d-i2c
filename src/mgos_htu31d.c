@@ -53,7 +53,6 @@ static uint8_t crc8(const uint8_t *data, int len) {
 // Public functions follow
 struct mgos_htu31d *mgos_htu31d_create(struct mgos_i2c *i2c, uint8_t i2caddr) {
   struct mgos_htu31d *sensor;
-  // uint32_t version;
   uint8_t version[4] = {0};
 
   if (!i2c) {
